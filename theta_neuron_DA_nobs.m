@@ -30,6 +30,8 @@ end
 
 %%
 
+for SWITCH_LOC = [0,1] % standard and localized
+
 dunobs = [2,3,4,5,6,10,12,15,20,30]; 
 nr = length(dunobs); 
 nr2 = 100; % Number of random realizations
@@ -104,7 +106,7 @@ end
 
 %% Localisation matrix
 
-SWITCH_LOC = 1;
+%SWITCH_LOC = 1;
 % No localisation
 if (SWITCH_LOC == 0)
     loc_mat = ones(N,N);
@@ -308,7 +310,47 @@ toc
 end
 
 %%
-save('DA_theta_ring_nobs_loc_1.mat')
+if (SWITCH_LOC == 1)
+    save('DA_theta_ring_nobs_loc_1.mat')
+else
+    save('DA_theta_ring_nobs_no_loc_1.mat')
+end
+
+end
+
+%% Figures (after running both nobs programs)
+a1 = load('DA_theta_ring_nobs_no_loc_1.mat');
+a2 = load('DA_theta_ring_nobs_no_loc_2.mat');
+b1 = load('DA_theta_ring_nobs_loc_1.mat');
+b2 = load('DA_theta_ring_nobs_loc_2.mat');
+
+%%
+N = 60;
+dunobs = [2,3,4,5,6,10,12,15,20,30];
+nunobs1 = N./dunobs;
+nobs1 = N - nunobs1;
+
+dobs = [3,4,5,6,10,12,15,20,30]; 
+nobs2 = flip(N./dobs);
+nunobs2 = N - nobs2;
+
+nobs = [nobs2, nobs1];
+
+%%
+h = figure(2);
+plot(nobs/N,[flip(median(a2.end_rms_theta,2)); median(a1.end_rms_theta,2)],'--bx','LineWidth',2,'MarkerSize',10)
+hold on
+plot(nobs/N,[flip(median(a2.end_rms_zeta,2)); median(a1.end_rms_zeta,2)],'-bo','LineWidth',2,'MarkerSize',10)
+hold on
+plot(nobs/N,[flip(median(b2.end_rms_theta,2)); median(b1.end_rms_theta,2)],'--rx','LineWidth',2,'MarkerSize',10)
+hold on
+plot(nobs/N,[flip(median(b2.end_rms_zeta,2)); median(b1.end_rms_zeta,2)],'-ro','LineWidth',2,'MarkerSize',10)
+hold off
+set(gca,'YScale','log')
+set(gca,'FontSize',18)
+xlabel('Fraction of observed nodes','Interpreter','latex','FontSize',20)
+ylabel('RMS error','Interpreter','latex','FontSize',20)
+legend('$E_\phi$ standard','$E_\zeta$ standard','$E_\phi$ localized','$E_\zeta$ localized','Interpreter','latex','FontSize',18,'Location','southwest')
 
 
 

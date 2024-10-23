@@ -30,6 +30,8 @@ end
 
 %%
 
+for SWITCH_LOC = [0,1] % standard and localized
+
 dobs = [3,4,5,6,10,12,15,20,30]; 
 nr = length(dobs); 
 nr2 = 100; % Number of random realizations
@@ -325,6 +327,12 @@ toc
 end
 
 %%
-save('DA_theta_ring_nobs_loc_2.mat')
+if (SWITCH_LOC == 1)
+    save('DA_theta_ring_nobs_loc_1.mat')
+else
+    save('DA_theta_ring_nobs_no_loc_1.mat')
+end
+
+end
 
 

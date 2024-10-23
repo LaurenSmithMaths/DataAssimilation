@@ -14,8 +14,10 @@ n = 2;
 
 %% Switches for selecting options
 SWITCH_TOP = 2; % network topology, 2 = some positive, some inhibitive, ringlike
-SWITCH_LOC = 1; % localization, 1 = localized EnKF
+%SWITCH_LOC = 1; % localization, 1 = localized EnKF
 SWITCH_GAP = 0; % Intrinsic firing parameters, 0 = normally distributed
+
+for SWITCH_LOC = [0,1]
 
 %% theta neuron network connectivity
 
@@ -294,14 +296,121 @@ toc
 
 ave_Pa = ave_Pa/ct;
 
-%%
-figure(11)
-plot(time,log10(rms_PertObs_zeta))
-set(gca,'FontSize',14)
-xlabel('$t$','Interpreter','latex','FontSize',18)
-ylabel('log10(RMS error in $\zeta$)','Interpreter','latex','FontSize',18)
+if (SWITCH_LOC == 1)
+    save("theta_DA_ring_0.7_observed_loc.mat");
+else
+    save("theta_DA_ring_0.7_observed_no_loc.mat");
+end
 
-%%
+end
+
+%% Figures
+
+a = load("theta_DA_ring_0.7_observed_loc.mat");
+b = load("theta_DA_ring_0.7_observed_no_loc.mat");
+
+%% theta_i vs t
+figure(3)
+clims = [0 2*pi];
+imagesc([a.dts,a.na*a.dts],[1,a.N],a.theta_truth,clims)
+pbaspect([1,1,1])
+c = colorbar;
+colormap('hsv')
+xlim([0 a.na*a.dts])
+set(gca,'FontSize',18)
+yticks([1,10,20,30,40,50])
+set(gca,'TickLength',[0 0])
+xlabel('$t$','Interpreter','latex','FontSize',20)
+ylabel('$i$','Interpreter','latex','FontSize',20)
+c.Ticks = [0:pi/2:2*pi];
+c.TickLabels = {'$0$','$\pi/2$','$\pi$','$3\pi/2$','$2\pi$'};
+c.TickLabelInterpreter = 'latex';
+c.FontSize = 18;
+
+%% RMS errors
+h = figure(12);
+plot(b.time,(b.rms_PertObs_theta),'--b','LineWidth',2)
+hold on
+plot(b.time,(b.rms_PertObs_zeta),'-b','LineWidth',2)
+hold on
+plot(a.time,(a.rms_PertObs_theta),'--r','LineWidth',2)
+hold on
+plot(a.time,(a.rms_PertObs_zeta),'-r','LineWidth',2)
+hold off
+set(gca,'YScale','log')
+set(gca,'FontSize',18)
+ylim([1E-3 1E0])
+xlabel('$t$','Interpreter','latex','FontSize',20)
+ylabel('RMS error','Interpreter','latex','FontSize',20)
+legend('$E_\phi$ standard','$E_\zeta$ standard','$E_\phi$ localized','$E_\zeta$ localized','Interpreter','latex','FontSize',18,'Location','southwest')
+
+%% Residuals in theta
+h = figure(13);
+
+%scatter(1:a.N,mod2(a.phi_truth(:,end)-a.Za_phi_mean(:,end),2*pi,-pi),[],'r')
+b_obs_mean = median(abs(mod2(b.theta_truth(b.ind_obs,end)-b.Za_theta_mean(b.ind_obs,end),2*pi,-pi)/(2*pi)));
+b_unobs_mean = median(abs(mod2(b.theta_truth(b.ind_unobs,end)-b.Za_theta_mean(b.ind_unobs,end),2*pi,-pi)/(2*pi)));
+a_obs_mean = median(abs(mod2(a.theta_truth(a.ind_obs,end)-a.Za_theta_mean(a.ind_obs,end),2*pi,-pi)/(2*pi)));
+a_unobs_mean = median(abs(mod2(a.theta_truth(a.ind_unobs,end)-a.Za_theta_mean(a.ind_unobs,end),2*pi,-pi)/(2*pi)));
+
+sz = 75;
+lwidth = 2;
+scatter(b.ind_obs,abs(mod2(b.theta_truth(b.ind_obs,end)-b.Za_theta_mean(b.ind_obs,end),2*pi,-pi)/(2*pi)),sz,'b','^','filled','LineWidth',lwidth)
+hold on
+scatter(b.ind_unobs,abs(mod2(b.theta_truth(b.ind_unobs,end)-b.Za_theta_mean(b.ind_unobs,end),2*pi,-pi)/(2*pi)),sz,'b','^','LineWidth',lwidth)
+hold on
+scatter(a.ind_obs,abs(mod2(a.theta_truth(a.ind_obs,end)-a.Za_theta_mean(a.ind_obs,end),2*pi,-pi)/(2*pi)),sz,'r','filled','LineWidth',lwidth)
+hold on
+scatter(a.ind_unobs,abs(mod2(a.theta_truth(a.ind_unobs,end)-a.Za_theta_mean(a.ind_unobs,end),2*pi,-pi)/(2*pi)),sz,'r','LineWidth',lwidth)
+hold off
+%yline([0])
+yline([b_obs_mean],'b')
+yline([b_unobs_mean],'--b')
+yline([a_obs_mean],'r')
+yline([a_unobs_mean],'--r')
+set(gca,'YScale','log')
+set(gca,'FontSize',18)
+xlabel('$i$','Interpreter','latex','FontSize',20)
+ylabel('$|\phi_i - \phi^{\rm a}_i|/(2\pi)$','Interpreter','latex','FontSize',20)
+legend('standard, observed','standard, unobserved','localized, observed','localized, unobserved',...
+    'Interpreter','latex','FontSize',18,'Location','southeast','NumColumns',2)
+box on
+
+%% Residuals in zeta
+h = figure(14);
+
+%scatter(1:a.N,mod2(a.phi_truth(:,end)-a.Za_phi_mean(:,end),2*pi,-pi),[],'r')
+max_omega = max(abs(a.zeta_truth));
+
+b_obs_mean = median(abs((b.zeta_truth(b.ind_obs)-b.Za_zeta_mean(b.ind_obs,end))/max_omega));
+b_unobs_mean = median(abs((b.zeta_truth(b.ind_unobs)-b.Za_zeta_mean(b.ind_unobs,end))/max_omega));
+a_obs_mean = median(abs((a.zeta_truth(a.ind_obs)-a.Za_zeta_mean(a.ind_obs,end))/max_omega));
+a_unobs_mean = median(abs((a.zeta_truth(a.ind_unobs)-a.Za_zeta_mean(a.ind_unobs,end))/max_omega));
+
+sz = 75;
+lwidth = 2;
+scatter(b.ind_obs,abs((b.zeta_truth(b.ind_obs)-b.Za_zeta_mean(b.ind_obs,end))/max_omega),sz,'b','^','filled','LineWidth',lwidth)
+hold on
+scatter(b.ind_unobs,abs((b.zeta_truth(b.ind_unobs)-b.Za_zeta_mean(b.ind_unobs,end))/max_omega),sz,'b','^','LineWidth',lwidth)
+hold on
+scatter(a.ind_obs,abs((a.zeta_truth(a.ind_obs)-a.Za_zeta_mean(a.ind_obs,end))/max_omega),sz,'r','filled','LineWidth',lwidth)
+hold on
+scatter(a.ind_unobs,abs((a.zeta_truth(a.ind_unobs)-a.Za_zeta_mean(a.ind_unobs,end))/max_omega),sz,'r','LineWidth',lwidth)
+hold off
+%yline([0])
+yline([b_obs_mean],'b')
+yline([b_unobs_mean],'--b')
+yline([a_obs_mean],'r')
+yline([a_unobs_mean],'--r')
+set(gca,'YScale','log')
+set(gca,'FontSize',18)
+xlabel('$i$','Interpreter','latex','FontSize',20)
+ylabel('$|\zeta_i - \zeta^{\rm a}_i|/\zeta_{\max}$','Interpreter','latex','FontSize',20)
+legend('standard, observed','standard, unobserved','localized, observed','localized, unobserved',...
+    'Interpreter','latex','FontSize',18,'Location','southeast','NumColumns',2)
+box on
+
+%% Averaged normalized covariances Pa
 figure(13)
 imagesc(max(log10(abs(ave_Pa)),-3))
 colorbar

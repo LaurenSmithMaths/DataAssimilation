@@ -15,15 +15,16 @@ K = 80/num_neigh; % coupling strength
 
 N = 50; % number of nodes in the network
 
-obs_frac = 0.7; % Fraction of observed phases
+obs_frac = 1; % Fraction of observed phases
 
 %% Switches for selecting options
 SWITCH_TOP = 3; % network topology, 3 = ring
 SWITCH_GAP = 3; % native frequencies, 3 = normally distributed
-%SWITCH_LOC = true; % select localized or standard EnKF, true = localized
+SWITCH_LOC = false; % select localized or standard EnKF, true = localized
 SWITCH_TRANS = false; % whether to discard an initial transient in the integration. false = keep transient
 
-for SWITCH_LOC = [true,false]
+% for small and large ensemble, ms is the ensemble size
+for ms = [2*N+1,100*(2*N+1)]
 
 %% Network topology
 
@@ -174,7 +175,7 @@ Df2 = D-Ds;
 ind_unobs = setdiff(ind_all,ind_obs);
 
 % Size of ensemble ms
-ms = D+Df+1;
+%ms = D+Df+1;
 
 % Projections matrix S
 w = ones(ms,1)/ms;
@@ -325,164 +326,46 @@ end
 
 ave_Pf = ave_Pf/ct;
 
-if (SWITCH_LOC == true)
-    save("KM_DA_ring_0.7_observed_loc.mat");
+if (ms == 2*N+1)
+    save("KM_DA_correlations_small_ensemble.mat");
 else
-    save("KM_DA_ring_0.7_observed_no_loc.mat");
+    save("KM_DA_correlations_large_ensemble.mat");
 end
 
 end
 
 %% Figures
 
-a = load("KM_DA_ring_0.7_observed_loc.mat");
-b = load("KM_DA_ring_0.7_observed_no_loc.mat");
+a = load("KM_DA_correlations_small_ensemble.mat");
+b = load("KM_DA_correlations_large_ensemble.mat");
 
-%% phi_i vs t
-figure(3)
-clims = [0 2*pi];
-imagesc([a.dts,a.na*a.dts],[1,a.N],a.phi_truth,clims)
-pbaspect([1,1,1])
-c = colorbar;
-colormap('hsv')
-xlim([0 a.na*a.dts])
-set(gca,'FontSize',18)
-%yticks([1,10,20,30,40,50])
-set(gca,'TickLength',[0 0])
-xlabel('$t$','Interpreter','latex','FontSize',20)
-ylabel('$i$','Interpreter','latex','FontSize',20)
-c.Ticks = [0:pi/2:2*pi];
-c.TickLabels = {'$0$','$\pi/2$','$\pi$','$3\pi/2$','$2\pi$'};
-c.TickLabelInterpreter = 'latex';
-c.FontSize = 18;
-
-%% Localization matrix
-h = figure(88);
-clims = [0,1];
-imagesc([a.loc_mat,a.loc_mat;a.loc_mat,a.loc_mat],clims)
-pbaspect([1,1,1])
+%% Average normalized covariance matrix Pf for small ensemble
+h = figure(14);
+imagesc(max(log10(abs(a.ave_Pf)),-3))
 colorbar
-set(gca,'FontSize',18)
+pbaspect([1,1,1])
+set(gca,'FontSize',14)
+xlabel('$\phi,\,\omega$','Interpreter','latex','FontSize',18)
+ylabel('$\phi,\,\omega$','Interpreter','latex','FontSize',18)
 colormap(flipped_gray)
-xticks([1,25,50,75,100])
-yticks([1,25,50,75,100])
 xline(50.5,'r','LineWidth',2)
 yline(50.5,'r','LineWidth',2)
+xticks([1,25,50,75,100])
+yticks([1,25,50,75,100])
 set(gca,'TickLength',[0 0])
 
-%% Comparison with Gaspari Cohn localization
-A=a.A;
-tempA = A;
-graph_dist = eye(N);
-ct = 1;
-while (min(min(graph_dist))==0 && ct < N+2)
-    for i=1:N
-        for j=1:N
-            if (graph_dist(i,j) == 0 && tempA(i,j) > 0)
-                graph_dist(i,j) = ct;
-            end
-        end
-    end
-    ct = ct + 1;
-    tempA = tempA*A;
-end
-graph_dist = graph_dist - eye(N);
-
-% Gaspari-Cohn construction
-loc_dist = 2;
-GC_loc_mat = zeros(N,N);
-for i=1:N
-    for j=1:N
-        GC_loc_mat(i,j) = correlation_func(graph_dist(i,j),loc_dist);
-    end
-end
-
-h = figure(9999);
-plot(a.expA2(1,1:26).^1,'-kx','LineWidth',2)
-hold on
-plot(GC_loc_mat(1,1:26),'-ro','LineWidth',2)
-hold off
-legend('Matrix exp.','Gaspari & Cohn, c=2')
-set(gca,'FontSize',18)
-xlabel('$i$','Interpreter','latex','FontSize',20)
-ylabel('$L_{1i}$','Interpreter','latex','FontSize',20)
-
-%% RMS errors vs time
-h = figure(12);
-plot(b.time,(b.rms_PertObs_phi),'--b','LineWidth',2)
-hold on
-plot(b.time,(b.rms_PertObs_omega),'-b','LineWidth',2)
-hold on
-plot(a.time,(a.rms_PertObs_phi),'--r','LineWidth',2)
-hold on
-plot(a.time,(a.rms_PertObs_omega),'-r','LineWidth',2)
-hold off
-set(gca,'YScale','log')
-set(gca,'FontSize',18)
-ylim([1E-2 1E0])
-xlabel('$t$','Interpreter','latex','FontSize',20)
-ylabel('RMS error','Interpreter','latex','FontSize',20)
-legend('$E_\phi$ standard','$E_\omega$ standard','$E_\phi$ localized','$E_\omega$ localized','Interpreter','latex','FontSize',18,'Location','southwest')
-
-%% Residuals for phi
-h = figure(13);
-
-b_obs_mean = median((abs(mod2(b.phi_truth(b.ind_obs,end)-b.Za_phi_mean(b.ind_obs,end),2*pi,-pi)/(2*pi))));
-b_unobs_mean = median((abs(mod2(b.phi_truth(b.ind_unobs,end)-b.Za_phi_mean(b.ind_unobs,end),2*pi,-pi)/(2*pi))));
-a_obs_mean = median((abs(mod2(a.phi_truth(a.ind_obs,end)-a.Za_phi_mean(a.ind_obs,end),2*pi,-pi)/(2*pi))));
-a_unobs_mean = median((abs(mod2(a.phi_truth(a.ind_unobs,end)-a.Za_phi_mean(a.ind_unobs,end),2*pi,-pi)/(2*pi))));
-
-sz = 75;
-lwidth=2;
-scatter(b.ind_obs,(abs(mod2(b.phi_truth(b.ind_obs,end)-b.Za_phi_mean(b.ind_obs,end),2*pi,-pi)/(2*pi))),sz,'b','^','filled','LineWidth',lwidth)
-hold on
-scatter(b.ind_unobs,(abs(mod2(b.phi_truth(b.ind_unobs,end)-b.Za_phi_mean(b.ind_unobs,end),2*pi,-pi)/(2*pi))),sz,'b','^','LineWidth',lwidth)
-hold on
-scatter(a.ind_obs,(abs(mod2(a.phi_truth(a.ind_obs,end)-a.Za_phi_mean(a.ind_obs,end),2*pi,-pi)/(2*pi))),sz,'r','filled','LineWidth',lwidth)
-hold on
-scatter(a.ind_unobs,(abs(mod2(a.phi_truth(a.ind_unobs,end)-a.Za_phi_mean(a.ind_unobs,end),2*pi,-pi)/(2*pi))),sz,'r','LineWidth',lwidth)
-hold off
-yline([0])
-yline([b_obs_mean],'b','LineWidth',lwidth)
-yline([b_unobs_mean],'--b','LineWidth',lwidth)
-yline([a_obs_mean],'r','LineWidth',lwidth)
-yline([a_unobs_mean],'--r','LineWidth',lwidth)
-set(gca,'FontSize',18)
-xlabel('$i$','Interpreter','latex','FontSize',20)
-ylabel('$|\phi_i - \phi^{\rm a}_i|/(2\pi)$','Interpreter','latex','FontSize',20)
-legend('standard, observed','standard, unobserved','localized, observed','localized, unobserved','Interpreter','latex','FontSize',18,'Location','northwest','NumColumns',2)
-box on
-set(gca,'YScale','log')
-
-%% Residuals for omega
+%% Average normalized covariance matrix Pf for large ensemble
 h = figure(14);
+imagesc(max(log10(abs(b.ave_Pf)),-3))
+colorbar
+pbaspect([1,1,1])
+set(gca,'FontSize',14)
+xlabel('$\phi,\,\omega$','Interpreter','latex','FontSize',18)
+ylabel('$\phi,\,\omega$','Interpreter','latex','FontSize',18)
+colormap(flipped_gray)
+xline(50.5,'r','LineWidth',2)
+yline(50.5,'r','LineWidth',2)
+xticks([1,25,50,75,100])
+yticks([1,25,50,75,100])
+set(gca,'TickLength',[0 0])
 
-max_omega = max(abs(a.omega_truth));
-
-b_obs_mean = median(abs((b.omega_truth(b.ind_obs)'-b.Za_omega_unobs_mean(b.ind_obs,end))/max_omega));
-b_unobs_mean = median(abs((b.omega_truth(b.ind_unobs)'-b.Za_omega_unobs_mean(b.ind_unobs,end))/max_omega));
-a_obs_mean = median(abs((a.omega_truth(a.ind_obs)'-a.Za_omega_unobs_mean(a.ind_obs,end))/max_omega));
-a_unobs_mean = median(abs((a.omega_truth(a.ind_unobs)'-a.Za_omega_unobs_mean(a.ind_unobs,end))/max_omega));
-
-sz = 75;
-lwidth = 2;
-scatter(b.ind_obs,abs((b.omega_truth(b.ind_obs)'-b.Za_omega_unobs_mean(b.ind_obs,end))/max_omega),sz,'b','^','filled','LineWidth',2)
-hold on
-scatter(b.ind_unobs,abs((b.omega_truth(b.ind_unobs)'-b.Za_omega_unobs_mean(b.ind_unobs,end))/max_omega),sz,'b','^','LineWidth',2)
-hold on
-scatter(a.ind_obs,abs((a.omega_truth(a.ind_obs)'-a.Za_omega_unobs_mean(a.ind_obs,end))/max_omega),sz,'r','filled','LineWidth',2)
-hold on
-scatter(a.ind_unobs,abs((a.omega_truth(a.ind_unobs)'-a.Za_omega_unobs_mean(a.ind_unobs,end))/max_omega),sz,'r','LineWidth',2)
-hold off
-%yline([0])
-yline([b_obs_mean],'b','LineWidth',lwidth)
-yline([b_unobs_mean],'--b','LineWidth',lwidth)
-yline([a_obs_mean],'r','LineWidth',lwidth)
-yline([a_unobs_mean],'--r','LineWidth',lwidth)
-set(gca,'FontSize',18)
-xlabel('$i$','Interpreter','latex','FontSize',20)
-ylabel('$|\omega_i - \omega^{\rm a}_i|/\omega_{\max}$','Interpreter','latex','FontSize',20)
-legend('standard, observed','standard, unobserved','localized, observed','localized, unobserved',...
-    'Interpreter','latex','FontSize',18,'Location','southeast','NumColumns',2)
-box on
-set(gca,'YScale','log')
