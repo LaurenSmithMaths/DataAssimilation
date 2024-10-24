@@ -16,10 +16,6 @@ if (local == 0)
     
 end
 
-%% Set the random seed (so we get reproducible results)
-rand_init = 20;
-rng(rand_init);
-
 %% Equation parameters
 num_neigh = 3; % number of neighbours in the ring topology
 
@@ -36,6 +32,10 @@ SWITCH_GAP = 3; % native frequencies, 3 = normally distributed
 SWITCH_TRANS = false; % whether to discard an initial transient in the integration. false = keep transient
 
 for SWITCH_LOC = [true,false]
+
+%% Set the random seed (so we get reproducible results)
+rand_init = 20;
+rng(rand_init);
 
 %% Network topology
 
@@ -129,7 +129,7 @@ end
 loc_mat = mat_exp_loc(A,lambda);
 
 %% Native frequencies 
-rng(3*rand_init + 1);
+%rng(3*rand_init + 1);
 % uniform: random
 if(SWITCH_GAP == 1)
     omega = -1 + 2*rand(1,N);
@@ -277,7 +277,7 @@ rms_phi = zeros(1,na);
 %% EnKF
 
 % Initial ensemble
-rng(4*rand_init+1);
+rng(rand_init+1);
 
 sigma_phi = 0.1;
 
@@ -435,7 +435,7 @@ plot(a.time,(a.rms_omega),'-r','LineWidth',2)
 hold off
 set(gca,'YScale','log')
 set(gca,'FontSize',18)
-ylim([1E-2 1E0])
+ylim([1E-3 1E-1])
 xlabel('$t$','Interpreter','latex','FontSize',20)
 ylabel('RMS error','Interpreter','latex','FontSize',20)
 legend('$E_\phi$ standard','$E_\omega$ standard','$E_\phi$ localized','$E_\omega$ localized','Interpreter','latex','FontSize',18,'Location','southwest')
