@@ -4,6 +4,18 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% Check if on local or server. Local: local == 1, server: local == 0
+local = usejava('desktop');
+
+if (local == 0)
+    
+    old_num_threads = maxNumCompThreads;
+    new_num_threads = min(old_num_threads,8)
+    old_num_threads = maxNumCompThreads(new_num_threads);
+    maxNumCompThreads
+    
+end
+
 %% Set the random seed (so we get reproducible results)
 rand_init = 20;
 rng(rand_init);
@@ -207,7 +219,7 @@ dt = 0.01;
 nt = 1;
 dts = nt*dt;
 % Number of recorded integration steps
-na = 10/dts;
+na = 30/dts;
 
 %% Structure with pseudo-globals, which we pass to many functions
 params.D = D;

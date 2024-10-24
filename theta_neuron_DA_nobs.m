@@ -22,6 +22,7 @@ if isempty(p)
     else
         parpool(16);
     end
+    p = gcp('nocreate');
     poolsize = p.NumWorkers
 else
     % There is a parallel pool of <p.NumWorkers> workers

@@ -20,6 +20,7 @@ if isempty(p)
     else
         parpool(16);
     end
+    p = gcp('nocreate');
     poolsize = p.NumWorkers
 else
     % There is a parallel pool of <p.NumWorkers> workers
@@ -28,11 +29,14 @@ end
 
 %%
 
+for SWITCH_LOC = [true,false]
+
 nr = 500; % Number of random realizations
 end_rms_phi = zeros(nr,1);
 end_rms_omega = zeros(nr,1);
 
 %% Equation parameters
+num_neigh = 3;
 
 K = 80/num_neigh; % coupling strength 
 
@@ -46,11 +50,9 @@ SWITCH_GAP = 3; % native frequencies, 3 = normally distributed
 %SWITCH_LOC = true; % select localized or standard EnKF, true = localized
 SWITCH_TRANS = false; % whether to discard an initial transient in the integration. false = keep transient
 
-for SWITCH_LOC = [true,false]
-
 parfor rr = 1:nr
     
-    disp(rr);
+    %disp(rr);
 
 %% Set the random seed (so we get reproducible results)
 
@@ -76,8 +78,7 @@ if(SWITCH_TOP == 1)
     A(1:N+1:N*N) = 0;
     A = A - tril(A);
     A = A + triu(A,1).';
-    num_neigh = (p*(N-1))/2; % Used to find the localization lambda, equiv connection radius for ring top, mean degree / 2
-    num_neighbors = num_neigh;
+    num_neighbors = (p*(N-1))/2; % Used to find the localization lambda, equiv connection radius for ring top, mean degree / 2
 end
 %Nearest neighbor line (not ring)
 if(SWITCH_TOP == 2)
@@ -141,10 +142,10 @@ else
     l1 = 1.1*l0;
     [temp, lambda_u] = ring_loc_param(N,r_u,eps,l0,l1,1e-6);
     
-    % Now interpolate between them, based on 1/lambda = m*r + c
-    m = (1/lambda_u - 1/lambda_l)/(r_u - r_l);
-    c = 1/lambda_l - m*r_l;
-    lambda = 1/(m*num_neighbors + c);
+    % Now interpolate between them, based on 1/lambda = m1*r + c
+    m1 = (1/lambda_u - 1/lambda_l)/(r_u - r_l);
+    c = 1/lambda_l - m1*r_l;
+    lambda = 1/(m1*num_neighbors + c);
     % the output lambda is the lambda used for the matrix exp localization
 end
 
@@ -328,7 +329,6 @@ for j=1:na
     Za_phi = Za(1:D,:)';
     
     Za_omega(:,:) = Za(D+1:end,:)';
-    
     
     for m=1:ms
         [~,temp] = ode45(@kuramoto_matrixform,[0 dts],Za_phi(m,:),options,A,N,Za_omega(m,:),K);

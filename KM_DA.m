@@ -4,6 +4,18 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% Check if on local or server. Local: local == 1, server: local == 0
+local = usejava('desktop');
+
+if (local == 0)
+    
+    old_num_threads = maxNumCompThreads;
+    new_num_threads = min(old_num_threads,8)
+    old_num_threads = maxNumCompThreads(new_num_threads);
+    maxNumCompThreads
+    
+end
+
 %% Set the random seed (so we get reproducible results)
 rand_init = 20;
 rng(rand_init);
@@ -206,7 +218,7 @@ dt = 0.01;
 nt = 1;
 dts = nt*dt;
 % Number of recorded integration steps
-na = 10/dts;
+na = 30/dts;
 
 %% Structure with pseudo-globals, which we pass to many functions
 params.D = D;
@@ -357,6 +369,9 @@ c.TickLabelInterpreter = 'latex';
 c.FontSize = 18;
 
 %% Localization matrix
+gray_cmap = colormap(gray);
+flipped_gray = flip(gray_cmap);
+
 h = figure(88);
 clims = [0,1];
 imagesc([a.loc_mat,a.loc_mat;a.loc_mat,a.loc_mat],clims)
@@ -371,6 +386,7 @@ yline(50.5,'r','LineWidth',2)
 set(gca,'TickLength',[0 0])
 
 %% Comparison with Gaspari Cohn localization
+N=a.N;
 A=a.A;
 tempA = A;
 graph_dist = eye(N);
@@ -398,7 +414,7 @@ for i=1:N
 end
 
 h = figure(9999);
-plot(a.expA2(1,1:26).^1,'-kx','LineWidth',2)
+plot(a.loc_mat(1,1:26).^1,'-kx','LineWidth',2)
 hold on
 plot(GC_loc_mat(1,1:26),'-ro','LineWidth',2)
 hold off
@@ -409,13 +425,13 @@ ylabel('$L_{1i}$','Interpreter','latex','FontSize',20)
 
 %% RMS errors vs time
 h = figure(12);
-plot(b.time,(b.rms_PertObs_phi),'--b','LineWidth',2)
+plot(b.time,(b.rms_phi),'--b','LineWidth',2)
 hold on
-plot(b.time,(b.rms_PertObs_omega),'-b','LineWidth',2)
+plot(b.time,(b.rms_omega),'-b','LineWidth',2)
 hold on
-plot(a.time,(a.rms_PertObs_phi),'--r','LineWidth',2)
+plot(a.time,(a.rms_phi),'--r','LineWidth',2)
 hold on
-plot(a.time,(a.rms_PertObs_omega),'-r','LineWidth',2)
+plot(a.time,(a.rms_omega),'-r','LineWidth',2)
 hold off
 set(gca,'YScale','log')
 set(gca,'FontSize',18)
@@ -459,20 +475,20 @@ h = figure(14);
 
 max_omega = max(abs(a.omega_truth));
 
-b_obs_mean = median(abs((b.omega_truth(b.ind_obs)'-b.Za_omega_unobs_mean(b.ind_obs,end))/max_omega));
-b_unobs_mean = median(abs((b.omega_truth(b.ind_unobs)'-b.Za_omega_unobs_mean(b.ind_unobs,end))/max_omega));
-a_obs_mean = median(abs((a.omega_truth(a.ind_obs)'-a.Za_omega_unobs_mean(a.ind_obs,end))/max_omega));
-a_unobs_mean = median(abs((a.omega_truth(a.ind_unobs)'-a.Za_omega_unobs_mean(a.ind_unobs,end))/max_omega));
+b_obs_mean = median(abs((b.omega_truth(b.ind_obs)'-b.Za_omega_mean(b.ind_obs,end))/max_omega));
+b_unobs_mean = median(abs((b.omega_truth(b.ind_unobs)'-b.Za_omega_mean(b.ind_unobs,end))/max_omega));
+a_obs_mean = median(abs((a.omega_truth(a.ind_obs)'-a.Za_omega_mean(a.ind_obs,end))/max_omega));
+a_unobs_mean = median(abs((a.omega_truth(a.ind_unobs)'-a.Za_omega_mean(a.ind_unobs,end))/max_omega));
 
 sz = 75;
 lwidth = 2;
-scatter(b.ind_obs,abs((b.omega_truth(b.ind_obs)'-b.Za_omega_unobs_mean(b.ind_obs,end))/max_omega),sz,'b','^','filled','LineWidth',2)
+scatter(b.ind_obs,abs((b.omega_truth(b.ind_obs)'-b.Za_omega_mean(b.ind_obs,end))/max_omega),sz,'b','^','filled','LineWidth',2)
 hold on
-scatter(b.ind_unobs,abs((b.omega_truth(b.ind_unobs)'-b.Za_omega_unobs_mean(b.ind_unobs,end))/max_omega),sz,'b','^','LineWidth',2)
+scatter(b.ind_unobs,abs((b.omega_truth(b.ind_unobs)'-b.Za_omega_mean(b.ind_unobs,end))/max_omega),sz,'b','^','LineWidth',2)
 hold on
-scatter(a.ind_obs,abs((a.omega_truth(a.ind_obs)'-a.Za_omega_unobs_mean(a.ind_obs,end))/max_omega),sz,'r','filled','LineWidth',2)
+scatter(a.ind_obs,abs((a.omega_truth(a.ind_obs)'-a.Za_omega_mean(a.ind_obs,end))/max_omega),sz,'r','filled','LineWidth',2)
 hold on
-scatter(a.ind_unobs,abs((a.omega_truth(a.ind_unobs)'-a.Za_omega_unobs_mean(a.ind_unobs,end))/max_omega),sz,'r','LineWidth',2)
+scatter(a.ind_unobs,abs((a.omega_truth(a.ind_unobs)'-a.Za_omega_mean(a.ind_unobs,end))/max_omega),sz,'r','LineWidth',2)
 hold off
 %yline([0])
 yline([b_obs_mean],'b','LineWidth',lwidth)

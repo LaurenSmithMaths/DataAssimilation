@@ -21,19 +21,11 @@ if isempty(p)
     else
         parpool(16);
     end
+    p = gcp('nocreate');
     poolsize = p.NumWorkers
 else
     % There is a parallel pool of <p.NumWorkers> workers
     poolsize = p.NumWorkers
-end
-
-if (local == 0)
-    
-    old_num_threads = maxNumCompThreads;
-    new_num_threads = min(old_num_threads,8)
-    old_num_threads = maxNumCompThreads(new_num_threads);
-    maxNumCompThreads
-    
 end
 
 %%
@@ -141,9 +133,9 @@ else
     [temp, lambda_u] = ring_loc_param(N,r_u,eps,l0,l1,1e-6);
     
     % Now interpolate between them, based on 1/lambda = m*r + c
-    m = (1/lambda_u - 1/lambda_l)/(r_u - r_l);
-    c = 1/lambda_l - m*r_l;
-    lambda = 1/(m*num_neighbors + c);
+    m1 = (1/lambda_u - 1/lambda_l)/(r_u - r_l);
+    c = 1/lambda_l - m1*r_l;
+    lambda = 1/(m1*num_neighbors + c);
 end
 
 loc_mat = mat_exp_loc(A,lambda);
