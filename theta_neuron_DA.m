@@ -16,10 +16,6 @@ if (local == 0)
     
 end
 
-%% Set the random seed (so we get reproducible results)
-rand_init = 20;
-rng(rand_init);
-
 %% Equation parameters
 k = 2;
 n = 2;
@@ -30,6 +26,10 @@ SWITCH_TOP = 2; % network topology, 2 = some positive, some inhibitive, ringlike
 SWITCH_GAP = 0; % Intrinsic firing parameters, 0 = normally distributed
 
 for SWITCH_LOC = [0,1]
+
+%% Set the random seed (so we get reproducible results)
+rand_init = 20;
+rng(rand_init);
 
 %% theta neuron network connectivity
 
@@ -195,7 +195,7 @@ params.locA = [loc_mat loc_mat; loc_mat loc_mat];
 %% Create truth and observations   
 options = odeset('RelTol',1e-6,'AbsTol',1e-6);
 
-rng(2*rand_init);
+rng(rand_init);
 
 theta0 = 2*pi*rand(N,1);
 % transient that is discarded
@@ -424,7 +424,7 @@ box on
 
 %% Averaged normalized covariances Pa
 figure(13)
-imagesc(max(log10(abs(ave_Pa)),-3))
+imagesc(max(log10(abs(b.ave_Pa)),-3))
 colorbar
 pbaspect([1,1,1])
 set(gca,'FontSize',14)
